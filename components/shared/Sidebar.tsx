@@ -10,18 +10,46 @@ import {
   CalendarClock,
   Users,
   LogOut,
+  Handshake,
+  History,
 } from "lucide-react";
 
-const navItems = [
+// Definisikan tipe untuk profil pengguna
+interface UserProfile {
+  role: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+interface SidebarProps {
+  userProfile: UserProfile;
+}
+
+// Definisikan item menu untuk setiap peran
+const adminNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/equipment", label: "Peralatan", icon: Tractor },
   { href: "/maintenance", label: "Jadwal Perawatan", icon: Wrench },
-  { href: "/borrowing", label: "Peminjaman", icon: CalendarClock },
+  { href: "/borrowing", label: "Pinjam Alat", icon: CalendarClock },
+  { href: "/requests", label: "Manajemen Pinjaman", icon: Handshake },
+  { href: "/history", label: "Riwayat Penggunaan", icon: History },
   { href: "/users", label: "Manajemen Pengguna", icon: Users },
 ];
 
-export default function Sidebar() {
+const memberNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/equipment", label: "Peralatan", icon: Tractor },
+  { href: "/maintenance", label: "Jadwal Perawatan", icon: Wrench },
+  { href: "/borrowing", label: "Pinjam Alat", icon: CalendarClock },
+  { href: "/history", label: "Riwayat Saya", icon: History },
+];
+
+export default function Sidebar({ userProfile }: SidebarProps) {
   const pathname = usePathname();
+
+  // Pilih set menu berdasarkan peran pengguna
+  const navItems =
+    userProfile.role === "admin" ? adminNavItems : memberNavItems;
 
   return (
     <aside className="w-64 flex-shrink-0 bg-white border-r border-gray-200 flex-col hidden md:flex">
@@ -47,13 +75,14 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="px-4 py-4 border-t border-gray-200">
-        <Link
+        {/* Tombol Logout akan kita perbaiki nanti */}
+        <a
           href="/login"
           className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100"
         >
           <LogOut className="w-5 h-5 mr-3" />
           Keluar
-        </Link>
+        </a>
       </div>
     </aside>
   );

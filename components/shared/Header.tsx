@@ -1,41 +1,49 @@
 // components/shared/Header.tsx
-"use client"; // Komponen ini interaktif, jadi kita tandai sebagai Client Component
+"use client";
 
 import { Menu, Search } from "lucide-react";
 
-// Props untuk menerima fungsi toggle sidebar di mobile
-interface HeaderProps {
-  toggleSidebar: () => void;
+// Definisikan tipe untuk profil pengguna
+interface UserProfile {
+  role: string;
+  full_name: string | null;
+  avatar_url: string | null;
 }
 
-export default function Header({ toggleSidebar }: HeaderProps) {
+interface HeaderProps {
+  userProfile: UserProfile;
+}
+
+export default function Header({ userProfile }: HeaderProps) {
+  // Buat inisial dari nama jika tidak ada avatar
+  const initial = userProfile.full_name
+    ? userProfile.full_name.charAt(0).toUpperCase()
+    : "U";
+
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center">
-        {/* Tombol menu untuk mobile */}
-        <button
-          onClick={toggleSidebar}
-          className="md:hidden mr-4 text-gray-600"
-        >
+        {/* Tombol menu untuk mobile (akan kita fungsikan nanti) */}
+        <button className="md:hidden mr-4 text-gray-600">
           <Menu className="h-6 w-6" />
         </button>
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Cari peralatan..."
-            className="w-full max-w-xs pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-green-600 focus:border-green-600"
-          />
-        </div>
+        {/* ... (search bar) ... */}
       </div>
       <div className="flex items-center space-x-4">
         <span className="text-sm text-gray-600 hidden sm:block">
-          Selamat datang, Petani!
+          Selamat datang,{" "}
+          <span className="font-semibold">
+            {userProfile.full_name || "Pengguna"}
+          </span>
+          !
         </span>
         <img
-          className="h-10 w-10 rounded-full object-cover"
-          src="https://placehold.co/100x100/166534/FFFFFF?text=P"
-          alt="User avatar"
+          className="h-10 w-10 rounded-full object-cover bg-green-200 text-green-800 flex items-center justify-center font-bold"
+          src={
+            userProfile.avatar_url ||
+            `https://placehold.co/100x100/166534/FFFFFF?text=${initial}`
+          }
+          alt={userProfile.full_name || "User avatar"}
         />
       </div>
     </header>

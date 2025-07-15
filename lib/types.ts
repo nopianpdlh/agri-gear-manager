@@ -8,4 +8,5 @@ export type Equipment = {
   condition: "Baik" | "Perlu Perbaikan" | "Rusak";
   category: "Alat Berat" | "Mesin" | "Alat Tangan";
   created_at: string;
+  status: "Tersedia" | "Dipinjam" | "Dalam Perawatan";
 };

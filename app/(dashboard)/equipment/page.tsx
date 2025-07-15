@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/table";
 import { Equipment } from "@/lib/types";
 import { AddEquipmentDialog } from "@/components/shared/AddEquipmentDialog";
+import { Badge } from "@/components/ui/badge";
+import { EquipmentActions } from "@/components/shared/EquipmentActions";
 
 export default async function EquipmentPage() {
   const cookieStore = await cookies();
@@ -31,6 +33,16 @@ export default async function EquipmentPage() {
     }
   );
 
+  // Ambil data sesi dan profil pengguna
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", session!.user.id)
+    .single();
+
   const { data: equipment, error } = await supabase
     .from("equipment")
     .select("*")
@@ -38,14 +50,15 @@ export default async function EquipmentPage() {
 
   if (error) {
     console.error("Error fetching equipment:", error);
-    return <p>Gagal memuat data peralatan.</p>;
+    return <p className="p-6">Gagal memuat data peralatan.</p>;
   }
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Daftar Peralatan</h2>
-        <AddEquipmentDialog />
+        {/* Hanya tampilkan tombol Tambah untuk admin */}
+        {userProfile?.role === "admin" && <AddEquipmentDialog />}
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
@@ -56,22 +69,41 @@ export default async function EquipmentPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">Nama Peralatan</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Kondisi</TableHead>
-              <TableHead>Tahun Beli</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+              {/* Hanya tampilkan kolom Aksi untuk admin */}
+              {userProfile?.role === "admin" && (
+                <TableHead className="text-right">Aksi</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {equipment?.map((item: Equipment) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      item.status === "Tersedia"
+                        ? "default"
+                        : item.status === "Dalam Perawatan"
+                        ? "destructive"
+                        : "secondary"
+                    }
+                    className="capitalize"
+                  >
+                    {item.status}
+                  </Badge>
+                </TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.condition}</TableCell>
-                <TableCell>{item.purchase_year}</TableCell>
-                <TableCell className="text-right">
-                  {/* Tombol aksi akan ditambahkan di sini */}
-                </TableCell>
+                {/* Hanya tampilkan sel Aksi untuk admin */}
+                {userProfile?.role === "admin" && (
+                  <TableCell className="text-right">
+                    <EquipmentActions equipment={item} />
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
