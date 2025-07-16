@@ -14,6 +14,10 @@ import { Equipment } from "@/lib/types";
 import { AddEquipmentDialog } from "@/components/shared/AddEquipmentDialog";
 import { Badge } from "@/components/ui/badge";
 import { EquipmentActions } from "@/components/shared/EquipmentActions";
+import Link from "next/link";
+import { ExportButton } from "@/components/shared/ExportButton";
+import { ExportPdfButton } from "@/components/shared/ExportPdfButton";
+import { EquipmentExportActions } from "@/components/shared/EquipmentExportActions";
 
 export default async function EquipmentPage() {
   const cookieStore = await cookies();
@@ -57,8 +61,14 @@ export default async function EquipmentPage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Daftar Peralatan</h2>
-        {/* Hanya tampilkan tombol Tambah untuk admin */}
-        {userProfile?.role === "admin" && <AddEquipmentDialog />}
+
+        {/*  tampilkan tombol  */}
+
+        <div className="flex items-center gap-2">
+          <EquipmentExportActions data={equipment || []} />
+          {/* <-- Tambahkan tombol PDF */}
+          {userProfile?.role === "admin" && <AddEquipmentDialog />}
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
@@ -81,7 +91,14 @@ export default async function EquipmentPage() {
           <TableBody>
             {equipment?.map((item: Equipment) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link
+                    href={`/equipment/${item.id}`}
+                    className="hover:underline text-blue-600"
+                  >
+                    {item.name}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   <Badge
                     variant={

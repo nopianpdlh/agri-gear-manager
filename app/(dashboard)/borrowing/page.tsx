@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { BorrowEquipmentDialog } from "@/components/shared/BorrowEquipmentDialog";
 import { Equipment } from "@/lib/types";
+import Image from "next/image";
 
 export default async function BorrowingPage() {
   const cookieStore = await cookies();
@@ -49,8 +50,19 @@ export default async function BorrowingPage() {
           {availableEquipment.map((equipment: Equipment) => (
             <div
               key={equipment.id}
-              className="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col"
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden"
             >
+              <div className="relative h-48 w-full bg-gray-200">
+                <Image
+                  src={
+                    equipment.photo_urls?.[0] ||
+                    "https://placehold.co/600x400/e2e8f0/64748b?text=Tanpa+Foto"
+                  }
+                  alt={equipment.name}
+                  layout="fill"
+                  objectFit="cover"
+                />
+              </div>
               <div className="p-6 flex-grow">
                 <h3 className="text-lg font-bold text-gray-900">
                   {equipment.name}

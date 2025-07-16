@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { MaintenanceActions } from "@/components/shared/MaintenanceActions";
+import { MaintenanceExportActions } from "@/components/shared/MaintenanceExportActions";
 
 export default async function MaintenancePage() {
   const cookieStore = await cookies();
@@ -55,6 +56,7 @@ export default async function MaintenancePage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Jadwal Perawatan</h2>
+        <MaintenanceExportActions data={schedules || []} />
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">

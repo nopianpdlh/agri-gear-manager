@@ -114,6 +114,17 @@ export function AddEquipmentDialog() {
                 className="col-span-3"
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="photo" className="text-right">
+                Foto
+              </Label>
+              <Input
+                id="photo"
+                name="photo"
+                type="file"
+                className="col-span-3"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button type="submit">Simpan</Button>

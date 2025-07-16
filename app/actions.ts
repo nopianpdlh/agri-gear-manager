@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 
 export async function addEquipmentAction(formData: FormData) {
-  const cookieStore = await cookies(); // Dihapus 'await' dari sini
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,11 +43,43 @@ export async function addEquipmentAction(formData: FormData) {
     owner_id: user.id,
   };
 
+  const imageFile = formData.get("photo") as File;
+  let photoUrl = null;
+
   if (!rawFormData.name || !rawFormData.category || !rawFormData.condition) {
     return { error: "Nama, Kategori, dan Kondisi wajib diisi." };
   }
+  // Cek jika ada file yang diunggah
+  if (imageFile && imageFile.size > 0) {
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
-  const { error } = await supabase.from("equipment").insert([rawFormData]);
+    const { error: uploadError } = await supabase.storage
+      .from("equipment-photos")
+      .upload(fileName, imageFile);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return { error: "Gagal mengunggah foto." };
+    }
+
+    // Ambil URL publik dari file yang baru diunggah
+    const { data: publicUrlData } = supabase.storage
+      .from("equipment-photos")
+      .getPublicUrl(fileName);
+
+    photoUrl = publicUrlData.publicUrl;
+  }
+
+  const { error } = await supabase.from("equipment").insert([
+    {
+      ...rawFormData,
+      photo_urls: photoUrl ? [photoUrl] : null, // Simpan URL dalam array
+    },
+  ]);
+
+  // Jika ada error saat menyimpan ke database
+
   if (error) {
     console.error("Supabase error:", error);
     return { error: "Gagal menambahkan data ke database." };
@@ -134,14 +166,37 @@ export async function editEquipmentAction(
     return { error: "Nama, Kategori, dan Kondisi wajib diisi." };
   }
 
+  const imageFile = formData.get("photo") as File;
+  let photoUrl: string | null = null;
+
+  const updateData: any = { ...rawFormData };
+
+  if (imageFile && imageFile.size > 0) {
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("equipment-photos")
+      .upload(fileName, imageFile);
+
+    if (uploadError) return { error: "Gagal mengunggah foto baru." };
+
+    const { data: publicUrlData } = supabase.storage
+      .from("equipment-photos")
+      .getPublicUrl(fileName);
+
+    photoUrl = publicUrlData.publicUrl;
+    updateData.photo_urls = [photoUrl];
+  }
+
   const { error } = await supabase
     .from("equipment")
-    .update(rawFormData)
+    .update(updateData)
     .eq("id", equipmentId);
 
   if (error) {
     console.error("Supabase update error:", error);
-    return { error: "Gagal memperbarui data di database." };
+    return { error: "Gagal memperbarui data." };
   }
 
   revalidatePath("/equipment");
@@ -479,4 +534,265 @@ export async function returnEquipmentAction(request: {
   revalidatePath("/requests");
   revalidatePath("/equipment");
   return { success: "Peralatan telah ditandai sebagai dikembalikan." };
+}
+
+export async function signUpAction(formData: FormData) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const fullName = formData.get("full_name") as string;
+
+  if (!email || !password || !fullName) {
+    return { error: "Semua kolom wajib diisi." };
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      // Teruskan data tambahan yang akan ditangkap oleh trigger
+      data: {
+        full_name: fullName,
+        // avatar_url bisa ditambahkan di sini jika ada field upload
+      },
+    },
+  });
+
+  if (error) {
+    console.error("Sign up error:", error);
+    return { error: "Gagal mendaftarkan akun. Coba lagi." };
+  }
+
+  // Revalidasi mungkin tidak diperlukan di sini, tapi tidak ada salahnya
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function signInWithGoogleAction() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      // Pastikan URL ini sudah ditambahkan di Google Cloud Console
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    return { error: "Gagal login dengan Google. Coba lagi." };
+  }
+
+  // Redirect terjadi di sisi klien, jadi kita kirim URL-nya
+  return { url: data.url };
+}
+
+export async function addSparePartAction(
+  equipmentId: string,
+  formData: FormData
+) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const rawFormData = {
+    equipment_id: equipmentId,
+    name: formData.get("name") as string,
+    specification: formData.get("specification") as string,
+    stock: Number(formData.get("stock")) || 0,
+    stock_threshold: Number(formData.get("stock_threshold")) || 1,
+  };
+
+  if (!rawFormData.name) {
+    return { error: "Nama suku cadang wajib diisi." };
+  }
+
+  const { error } = await supabase.from("spare_parts").insert([rawFormData]);
+  if (error) {
+    console.error("Spare part insert error:", error);
+    return { error: "Gagal menambahkan suku cadang." };
+  }
+
+  revalidatePath(`/equipment/${equipmentId}`);
+  return { success: "Suku cadang berhasil ditambahkan." };
+}
+
+export async function editSparePartAction(
+  partId: string,
+  equipmentId: string,
+  formData: FormData
+) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const rawFormData = {
+    name: formData.get("name") as string,
+    specification: formData.get("specification") as string,
+    stock: Number(formData.get("stock")) || 0,
+    stock_threshold: Number(formData.get("stock_threshold")) || 1,
+  };
+
+  if (!rawFormData.name) {
+    return { error: "Nama suku cadang wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("spare_parts")
+    .update(rawFormData)
+    .eq("id", partId);
+
+  if (error) {
+    console.error("Spare part update error:", error);
+    return { error: "Gagal memperbarui suku cadang." };
+  }
+
+  revalidatePath(`/equipment/${equipmentId}`);
+  return { success: "Suku cadang berhasil diperbarui." };
+}
+
+export async function deleteSparePartAction(
+  partId: string,
+  equipmentId: string
+) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase
+    .from("spare_parts")
+    .delete()
+    .eq("id", partId);
+
+  if (error) {
+    console.error("Spare part delete error:", error);
+    return { error: "Gagal menghapus suku cadang." };
+  }
+
+  revalidatePath(`/equipment/${equipmentId}`);
+  return { success: "Suku cadang berhasil dihapus." };
+}
+
+export async function changeUserRoleAction(
+  userId: string,
+  newRole: "admin" | "member"
+) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  // Verifikasi bahwa pengguna yang melakukan aksi adalah admin
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const { data: adminProfile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", session!.user.id)
+    .single();
+
+  if (adminProfile?.role !== "admin") {
+    return { error: "Hanya admin yang dapat mengubah peran." };
+  }
+
+  // Mencegah admin mengubah perannya sendiri
+  if (session?.user?.id === userId) {
+    return { error: "Anda tidak dapat mengubah peran Anda sendiri." };
+  }
+
+  const { error } = await supabase
+    .from("users")
+    .update({ role: newRole })
+    .eq("id", userId);
+
+  if (error) {
+    console.error("Change role error:", error);
+    return { error: "Gagal mengubah peran pengguna." };
+  }
+
+  revalidatePath("/users");
+  return { success: `Peran pengguna berhasil diubah menjadi ${newRole}.` };
 }

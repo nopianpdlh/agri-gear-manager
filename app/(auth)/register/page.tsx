@@ -1,9 +1,8 @@
-// app/(auth)/login/page.tsx
+// app/(auth)/register/page.tsx
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,35 +13,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { signInWithGoogleAction } from "@/app/actions";
-import Link from "next/link";
+import { signUpAction, signInWithGoogleAction } from "@/app/actions"; // Kita akan buat ini selanjutnya
+import { toast } from "sonner";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
+  const handleSignUp = async (formData: FormData) => {
+    const result = await signUpAction(formData);
+    if (result?.error) {
+      setError(result.error);
     } else {
-      // Redirect ke dashboard setelah login berhasil
-      router.push("/dashboard");
-      router.refresh(); // Refresh untuk memastikan state server terupdate
+      setError(null);
+      toast.success("Pendaftaran Berhasil!", {
+        description:
+          "Silakan cek email Anda untuk verifikasi dan kemudian login.",
+      });
+      // Arahkan ke halaman login atau tampilkan pesan sukses
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignUp = async () => {
     const result = await signInWithGoogleAction();
     if (result.url) {
       window.location.href = result.url;
@@ -56,41 +47,43 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-4xl font-bold text-green-800">
-            Selamat Datang di Agri-Gear Manager
+            Buat Akun Baru
           </CardTitle>
           <CardDescription>
-            Masuk untuk melanjutkan ke dashboard Anda.
+            Mulai kelola aset pertanian Anda hari ini.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form action={handleSignUp} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Nama Lengkap</Label>
+              <Input
+                id="full_name"
+                name="full_name"
+                placeholder="Nama Anda"
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Alamat Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="petani@contoh.com"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Kata Sandi</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <Input id="password" name="password" type="password" required />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button
               type="submit"
               className="w-full bg-green-700 hover:bg-green-800"
             >
-              Masuk dengan Email
+              Daftar dengan Email
             </Button>
           </form>
           <div className="relative my-4">
@@ -106,17 +99,17 @@ export default function LoginPage() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleGoogleSignIn}
+            onClick={handleGoogleSignUp}
           >
-            Masuk dengan Google
+            Lanjutkan dengan Google
           </Button>
           <p className="text-sm text-center text-gray-600 mt-6">
-            Belum punya akun?{" "}
+            Sudah punya akun?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-medium text-green-700 hover:underline"
             >
-              Daftar di sini
+              Masuk di sini
             </Link>
           </p>
         </CardContent>

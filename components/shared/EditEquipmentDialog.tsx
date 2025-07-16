@@ -67,7 +67,7 @@ export function EditEquipmentDialog({ equipment }: EditEquipmentDialogProps) {
             Ubah detail peralatan di bawah ini. Klik simpan jika sudah selesai.
           </DialogDescription>
         </DialogHeader>
-        <form action={handleFormSubmit}>
+        <form action={handleFormSubmit} >
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
@@ -141,6 +141,17 @@ export function EditEquipmentDialog({ equipment }: EditEquipmentDialogProps) {
                 name="purchase_year"
                 type="number"
                 defaultValue={equipment.purchase_year || ""}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="photo" className="text-right">
+                Ganti Foto
+              </Label>
+              <Input
+                id="photo"
+                name="photo"
+                type="file"
                 className="col-span-3"
               />
             </div>
