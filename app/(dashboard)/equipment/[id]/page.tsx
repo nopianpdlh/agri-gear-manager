@@ -30,11 +30,12 @@ type Cost = {
 
 // Definisikan tipe Props secara eksplisit
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
 export default async function EquipmentDetailPage({ params }: Props) {
+  const { id } = await params;
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,17 +56,17 @@ export default async function EquipmentDetailPage({ params }: Props) {
   const { data: equipment, error: equipmentError } = await supabase
     .from("equipment")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
   const { data: spareParts } = await supabase
     .from("spare_parts")
     .select("*")
-    .eq("equipment_id", params.id)
+    .eq("equipment_id", id)
     .order("name", { ascending: true });
   const { data: costs } = await supabase
     .from("operational_costs")
     .select("*")
-    .eq("equipment_id", params.id)
+    .eq("equipment_id", id)
     .order("transaction_date", { ascending: false });
 
   if (equipmentError || !equipment) {
