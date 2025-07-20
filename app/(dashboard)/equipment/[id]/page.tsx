@@ -31,6 +31,7 @@ type Cost = {
 // Definisikan tipe Props secara eksplisit
 type Props = {
   params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 };
 
 export default async function EquipmentDetailPage({ params }: Props) {
