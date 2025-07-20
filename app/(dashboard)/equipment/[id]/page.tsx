@@ -29,12 +29,16 @@ type Cost = {
 };
 
 // Definisikan tipe Props secara eksplisit
-type Props = {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
+// type Props = {
+//   params: { id: string };
+//   searchParams: { [key: string]: string | string[] | undefined };
+// };
 
-export default async function EquipmentDetailPage({ params }: Props) {
+export default async function EquipmentDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const { id } = params;
   const cookieStore = await cookies();
   const supabase = createServerClient(
