@@ -1,7 +1,7 @@
 // app/(auth)/register/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,14 +26,15 @@ import { signUpAction } from "@/app/actions";
 import { toast } from "sonner";
 import { ChevronLeft } from "lucide-react";
 
-const provinces = [
-  "Jawa Barat",
-  "Jawa Tengah",
-  "Jawa Timur",
-  "DKI Jakarta",
-  "Banten",
-  "Yogyakarta",
-];
+interface Province {
+  id: string;
+  name: string;
+}
+
+interface City {
+  id: string;
+  name: string;
+}
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
@@ -54,20 +55,67 @@ export default function RegisterPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>("");
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
+
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const response = await fetch(
+          "https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json"
+        );
+        const data = await response.json();
+        setProvinces(data);
+      } catch (error) {
+        console.error("Gagal mengambil data provinsi:", error);
+        toast.error("Gagal memuat daftar provinsi.");
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProvinceId) {
+      const fetchCities = async () => {
+        setIsLoadingCities(true);
+        try {
+          const response = await fetch(
+            `https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProvinceId}.json`
+          );
+          const data = await response.json();
+          setCities(data);
+        } catch (error) {
+          console.error("Gagal mengambil data kota:", error);
+          toast.error("Gagal memuat daftar kota/kabupaten.");
+        } finally {
+          setIsLoadingCities(false);
+        }
+      };
+      fetchCities();
+    } else {
+      setCities([]);
+    }
+  }, [selectedProvinceId]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-
-    // Validasi real-time
     if (name === "email") validateEmail(value);
     if (name === "phone_number") validatePhoneNumber(value);
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "province") {
+      const province = provinces.find((p) => p.name === value);
+      setSelectedProvinceId(province ? province.id : "");
+      setFormData((prev) => ({ ...prev, city: "" }));
+    }
   };
 
   const validateEmail = (email: string) => {
@@ -123,21 +171,16 @@ export default function RegisterPage() {
   };
 
   const handleNext = () => {
-    if (validateStep()) {
-      setStep(step + 1);
-    }
+    if (validateStep()) setStep(step + 1);
   };
 
   const handlePrev = () => setStep(step - 1);
 
   const handleSignUp = async (formActionData: FormData) => {
     if (!validateStep()) return;
-
-    // Memastikan semua data dari state masuk ke FormData
     Object.entries(formData).forEach(([key, value]) => {
       formActionData.set(key, String(value));
     });
-
     const result = await signUpAction(formActionData);
     if (result?.error) {
       setErrors({ form: result.error });
@@ -147,7 +190,7 @@ export default function RegisterPage() {
         description:
           "Silakan cek email Anda untuk verifikasi dan kemudian login.",
       });
-      setStep(4); // Pindah ke step sukses
+      setStep(4);
     }
   };
 
@@ -186,6 +229,7 @@ export default function RegisterPage() {
                     name="full_name"
                     value={formData.full_name}
                     onChange={handleChange}
+                    required
                   />
                   {errors.full_name && (
                     <p className="text-red-500 text-xs mt-1">
@@ -201,6 +245,7 @@ export default function RegisterPage() {
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
+                    required
                   />
                   {errors.email && (
                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -214,6 +259,7 @@ export default function RegisterPage() {
                     type="tel"
                     value={formData.phone_number}
                     onChange={handleChange}
+                    required
                   />
                   {errors.phone_number && (
                     <p className="text-red-500 text-xs mt-1">
@@ -229,6 +275,7 @@ export default function RegisterPage() {
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
+                    required
                   />
                   {errors.password && (
                     <p className="text-red-500 text-xs mt-1">
@@ -244,6 +291,7 @@ export default function RegisterPage() {
                     type="password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    required
                   />
                   {errors.confirmPassword && (
                     <p className="text-red-500 text-xs mt-1">
@@ -276,6 +324,7 @@ export default function RegisterPage() {
                     placeholder="Padi, Jagung, Hortikultura..."
                     value={formData.commodity_type}
                     onChange={handleChange}
+                    required
                   />
                   {errors.commodity_type && (
                     <p className="text-red-500 text-xs mt-1">
@@ -303,14 +352,15 @@ export default function RegisterPage() {
                       name="province"
                       onValueChange={(v) => handleSelectChange("province", v)}
                       value={formData.province}
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih Provinsi" />
                       </SelectTrigger>
                       <SelectContent>
                         {provinces.map((p) => (
-                          <SelectItem key={p} value={p}>
-                            {p}
+                          <SelectItem key={p.id} value={p.name}>
+                            {p.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -323,12 +373,30 @@ export default function RegisterPage() {
                   </div>
                   <div>
                     <Label htmlFor="city">Kabupaten/Kota</Label>
-                    <Input
-                      id="city"
+                    <Select
                       name="city"
+                      onValueChange={(v) => handleSelectChange("city", v)}
                       value={formData.city}
-                      onChange={handleChange}
-                    />
+                      disabled={!selectedProvinceId || isLoadingCities}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            isLoadingCities
+                              ? "Memuat..."
+                              : "Pilih Kabupaten/Kota"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities.map((c) => (
+                          <SelectItem key={c.id} value={c.name}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {errors.city && (
                       <p className="text-red-500 text-xs mt-1">{errors.city}</p>
                     )}
@@ -341,6 +409,7 @@ export default function RegisterPage() {
                     name="full_address"
                     value={formData.full_address}
                     onChange={handleChange}
+                    required
                   />
                   {errors.full_address && (
                     <p className="text-red-500 text-xs mt-1">
@@ -355,6 +424,7 @@ export default function RegisterPage() {
                     name="postal_code"
                     value={formData.postal_code}
                     onChange={handleChange}
+                    required
                   />
                   {errors.postal_code && (
                     <p className="text-red-500 text-xs mt-1">
