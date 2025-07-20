@@ -30,12 +30,12 @@ type Cost = {
 
 // Definisikan tipe Props secara eksplisit
 type Props = {
-  params: Promise<{ id: string }>;
+  params: { id: string };
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
 export default async function EquipmentDetailPage({ params }: Props) {
-  const { id } = await params;
+  const { id } = params;
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
