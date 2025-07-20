@@ -60,7 +60,7 @@ export default async function BorrowingPage() {
                   }
                   alt={equipment.name}
                   layout="fill"
-                  objectFit="cover"
+                  className="object-contain"
                 />
               </div>
               <div className="p-6 flex-grow">

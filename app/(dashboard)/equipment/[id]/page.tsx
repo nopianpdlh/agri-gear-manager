@@ -16,8 +16,17 @@ import {
 import { SparePartActions } from "@/components/shared/SparePartActions";
 import { SparePart } from "@/lib/types";
 import { SparePartExportActions } from "@/components/shared/SparePartExportActions";
+import { AddCostDialog } from "@/components/shared/AddCostDialog";
+import { CostActions } from "@/components/shared/CostActions";
+import { CostExportActions } from "@/components/shared/CostExportActions"; // <-- Impor baru
 
-// Tipe data untuk suku cadang
+type Cost = {
+  id: string;
+  description: string;
+  cost_type: string;
+  amount: number;
+  transaction_date: string;
+};
 
 export default async function EquipmentDetailPage({
   params,
@@ -41,23 +50,28 @@ export default async function EquipmentDetailPage({
     }
   );
 
-  // Ambil detail peralatan
   const { data: equipment, error: equipmentError } = await supabase
     .from("equipment")
     .select("*")
     .eq("id", params.id)
     .single();
-
-  // Ambil daftar suku cadang untuk peralatan ini
-  const { data: spareParts, error: sparePartsError } = await supabase
+  const { data: spareParts } = await supabase
     .from("spare_parts")
     .select("*")
     .eq("equipment_id", params.id)
     .order("name", { ascending: true });
+  const { data: costs } = await supabase
+    .from("operational_costs")
+    .select("*")
+    .eq("equipment_id", params.id)
+    .order("transaction_date", { ascending: false });
 
   if (equipmentError || !equipment) {
     return <p className="p-6">Peralatan tidak ditemukan.</p>;
   }
+
+  const totalCost =
+    costs?.reduce((sum, cost) => sum + Number(cost.amount), 0) || 0;
 
   return (
     <div className="p-4 sm:p-6 space-y-8">
@@ -71,7 +85,7 @@ export default async function EquipmentDetailPage({
             }
             alt={equipment.name}
             fill={true}
-            className="object-cover"
+            className="object-contain"
           />
         </div>
         <div className="flex-1">
@@ -90,6 +104,15 @@ export default async function EquipmentDetailPage({
               {equipment.category}
             </Badge>
           </div>
+          <p className="text-lg mt-4">
+            Total Biaya Operasional:{" "}
+            <span className="font-bold text-green-700">
+              {new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+              }).format(totalCost)}
+            </span>
+          </p>
         </div>
       </div>
 
@@ -135,6 +158,60 @@ export default async function EquipmentDetailPage({
                 </TableCell>
                 <TableCell className="text-right">
                   <SparePartActions part={part} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Bagian Biaya Operasional */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-800">
+            Riwayat Biaya Operasional
+          </h3>
+          <div className="flex items-center gap-2">
+            <CostExportActions
+              data={costs || []}
+              equipmentName={equipment.name}
+            />
+            <AddCostDialog equipmentId={equipment.id} />
+          </div>
+        </div>
+        <Table>
+          <TableCaption>
+            Daftar semua biaya yang tercatat untuk peralatan ini.
+          </TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tanggal</TableHead>
+              <TableHead>Deskripsi</TableHead>
+              <TableHead>Jenis Biaya</TableHead>
+              <TableHead>Jumlah</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {costs?.map((cost: Cost) => (
+              <TableRow key={cost.id}>
+                <TableCell>
+                  {new Date(cost.transaction_date).toLocaleDateString("id-ID", {
+                    timeZone: "UTC",
+                  })}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {cost.description}
+                </TableCell>
+                <TableCell>{cost.cost_type}</TableCell>
+                <TableCell>
+                  {new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                  }).format(Number(cost.amount))}
+                </TableCell>
+                <TableCell className="text-right">
+                  <CostActions cost={cost} equipmentId={equipment.id} />
                 </TableCell>
               </TableRow>
             ))}

@@ -1,6 +1,7 @@
 // app/(dashboard)/equipment/page.tsx
 import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -14,12 +15,18 @@ import { Equipment } from "@/lib/types";
 import { AddEquipmentDialog } from "@/components/shared/AddEquipmentDialog";
 import { Badge } from "@/components/ui/badge";
 import { EquipmentActions } from "@/components/shared/EquipmentActions";
-import Link from "next/link";
-import { ExportButton } from "@/components/shared/ExportButton";
-import { ExportPdfButton } from "@/components/shared/ExportPdfButton";
 import { EquipmentExportActions } from "@/components/shared/EquipmentExportActions";
+import { EquipmentFilters } from "@/components/shared/EquipmentFilters";
 
-export default async function EquipmentPage() {
+export default async function EquipmentPage({
+  searchParams,
+}: {
+  searchParams?: {
+    query?: string;
+    category?: string;
+    condition?: string;
+  };
+}) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,7 +44,6 @@ export default async function EquipmentPage() {
     }
   );
 
-  // Ambil data sesi dan profil pengguna
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -47,10 +53,27 @@ export default async function EquipmentPage() {
     .eq("id", session!.user.id)
     .single();
 
-  const { data: equipment, error } = await supabase
+  // --- PERBAIKAN DI SINI ---
+  const searchTerm = searchParams?.query || "";
+  const categoryFilter = searchParams?.category || "all";
+  const conditionFilter = searchParams?.condition || "all";
+
+  let query = supabase
     .from("equipment")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (searchTerm) {
+    query = query.ilike("name", `%${searchTerm}%`);
+  }
+  if (categoryFilter !== "all") {
+    query = query.eq("category", categoryFilter);
+  }
+  if (conditionFilter !== "all") {
+    query = query.eq("condition", conditionFilter);
+  }
+
+  const { data: equipment, error } = await query;
 
   if (error) {
     console.error("Error fetching equipment:", error);
@@ -61,15 +84,13 @@ export default async function EquipmentPage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Daftar Peralatan</h2>
-
-        {/*  tampilkan tombol  */}
-
         <div className="flex items-center gap-2">
           <EquipmentExportActions data={equipment || []} />
-          {/* <-- Tambahkan tombol PDF */}
           {userProfile?.role === "admin" && <AddEquipmentDialog />}
         </div>
       </div>
+
+      <EquipmentFilters />
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
         <Table>
@@ -82,7 +103,6 @@ export default async function EquipmentPage() {
               <TableHead>Status</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Kondisi</TableHead>
-              {/* Hanya tampilkan kolom Aksi untuk admin */}
               {userProfile?.role === "admin" && (
                 <TableHead className="text-right">Aksi</TableHead>
               )}
@@ -115,7 +135,6 @@ export default async function EquipmentPage() {
                 </TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.condition}</TableCell>
-                {/* Hanya tampilkan sel Aksi untuk admin */}
                 {userProfile?.role === "admin" && (
                   <TableCell className="text-right">
                     <EquipmentActions equipment={item} />

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { signInWithGoogleAction } from "@/app/actions";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -53,8 +54,16 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-md shadow-lg relative">
+        <div className="absolute top-4 left-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/">
+              <ChevronLeft className="h-6 w-6" />
+              <span className="sr-only">Kembali ke Beranda</span>
+            </Link>
+          </Button>
+        </div>
+        <CardHeader className="text-center pt-12">
           <CardTitle className="text-4xl font-bold text-green-800">
             Selamat Datang di Agri-Gear Manager
           </CardTitle>

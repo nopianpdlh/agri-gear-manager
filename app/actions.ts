@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
+import { redirect } from "next/navigation";
 
 export async function addEquipmentAction(formData: FormData) {
   const cookieStore = await cookies();
@@ -558,28 +559,37 @@ export async function signUpAction(formData: FormData) {
   const password = formData.get("password") as string;
   const fullName = formData.get("full_name") as string;
 
+  // Ambil semua data baru dari form
+  const data = {
+    full_name: fullName,
+    phone_number: formData.get("phone_number") as string,
+    farm_name: formData.get("farm_name") as string,
+    commodity_type: formData.get("commodity_type") as string,
+    land_area: formData.get("land_area") as string,
+    province: formData.get("province") as string,
+    city: formData.get("city") as string,
+    full_address: formData.get("full_address") as string,
+    postal_code: formData.get("postal_code") as string,
+  };
+
   if (!email || !password || !fullName) {
-    return { error: "Semua kolom wajib diisi." };
+    return { error: "Informasi akun wajib diisi." };
   }
 
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      // Teruskan data tambahan yang akan ditangkap oleh trigger
-      data: {
-        full_name: fullName,
-        // avatar_url bisa ditambahkan di sini jika ada field upload
-      },
+      // Teruskan semua data tambahan yang akan ditangkap oleh trigger
+      data: data,
     },
   });
 
   if (error) {
     console.error("Sign up error:", error);
-    return { error: "Gagal mendaftarkan akun. Coba lagi." };
+    return { error: "Gagal mendaftarkan akun. Email mungkin sudah terdaftar." };
   }
 
-  // Revalidasi mungkin tidak diperlukan di sini, tapi tidak ada salahnya
   revalidatePath("/", "layout");
   return { success: true };
 }
@@ -795,4 +805,166 @@ export async function changeUserRoleAction(
 
   revalidatePath("/users");
   return { success: `Peran pengguna berhasil diubah menjadi ${newRole}.` };
+}
+
+export async function logoutAction() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set(name, value, options);
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Logout error:", error);
+    // Jika gagal, tetap arahkan ke halaman login untuk memastikan pengguna keluar
+  }
+
+  // Selalu arahkan pengguna ke halaman login setelah mencoba logout
+  return redirect("/login");
+}
+
+export async function addCostAction(equipmentId: string, formData: FormData) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const rawFormData = {
+    equipment_id: equipmentId,
+    description: formData.get("description") as string,
+    cost_type: formData.get("cost_type") as string,
+    amount: Number(formData.get("amount")),
+    transaction_date: formData.get("transaction_date") as string,
+  };
+
+  if (
+    !rawFormData.description ||
+    !rawFormData.cost_type ||
+    !rawFormData.amount ||
+    !rawFormData.transaction_date
+  ) {
+    return { error: "Semua kolom wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("operational_costs")
+    .insert([rawFormData]);
+  if (error) {
+    console.error("Add cost error:", error);
+    return { error: "Gagal menambahkan biaya." };
+  }
+
+  revalidatePath(`/equipment/${equipmentId}`);
+  return { success: "Biaya berhasil ditambahkan." };
+}
+
+export async function editCostAction(
+  costId: string,
+  equipmentId: string,
+  formData: FormData
+) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const rawFormData = {
+    description: formData.get("description") as string,
+    cost_type: formData.get("cost_type") as string,
+    amount: Number(formData.get("amount")),
+    transaction_date: formData.get("transaction_date") as string,
+  };
+
+  if (
+    !rawFormData.description ||
+    !rawFormData.cost_type ||
+    !rawFormData.amount ||
+    !rawFormData.transaction_date
+  ) {
+    return { error: "Semua kolom wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("operational_costs")
+    .update(rawFormData)
+    .eq("id", costId);
+
+  if (error) {
+    console.error("Edit cost error:", error);
+    return { error: "Gagal memperbarui biaya." };
+  }
+
+  revalidatePath(`/equipment/${equipmentId}`);
+  return { success: "Biaya berhasil diperbarui." };
+}
+
+export async function deleteCostAction(costId: string, equipmentId: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase
+    .from("operational_costs")
+    .delete()
+    .eq("id", costId);
+
+  if (error) {
+    console.error("Delete cost error:", error);
+    return { error: "Gagal menghapus biaya." };
+  }
+
+  revalidatePath(`/equipment/${equipmentId}`);
+  return { success: "Biaya berhasil dihapus." };
 }

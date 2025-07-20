@@ -12,9 +12,10 @@ interface UserProfile {
 
 interface HeaderProps {
   userProfile: UserProfile;
+  toggleSidebar: () => void;
 }
 
-export default function Header({ userProfile }: HeaderProps) {
+export default function Header({ userProfile, toggleSidebar }: HeaderProps) {
   // Buat inisial dari nama jika tidak ada avatar
   const initial = userProfile.full_name
     ? userProfile.full_name.charAt(0).toUpperCase()
@@ -24,7 +25,10 @@ export default function Header({ userProfile }: HeaderProps) {
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center">
         {/* Tombol menu untuk mobile (akan kita fungsikan nanti) */}
-        <button className="md:hidden mr-4 text-gray-600">
+        <button
+          onClick={toggleSidebar}
+          className="md:hidden mr-4 text-gray-600"
+        >
           <Menu className="h-6 w-6" />
         </button>
         {/* ... (search bar) ... */}
