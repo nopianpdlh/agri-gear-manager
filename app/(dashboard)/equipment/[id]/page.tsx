@@ -28,11 +28,12 @@ type Cost = {
   transaction_date: string;
 };
 
-export default async function EquipmentDetailPage({
-  params,
-}: {
+// Definisikan tipe Props secara eksplisit
+type Props = {
   params: { id: string };
-}) {
+};
+
+export default async function EquipmentDetailPage({ params }: Props) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
