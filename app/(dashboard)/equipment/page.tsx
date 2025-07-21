@@ -17,17 +17,20 @@ import { Badge } from "@/components/ui/badge";
 import { EquipmentActions } from "@/components/shared/EquipmentActions";
 import { EquipmentExportActions } from "@/components/shared/EquipmentExportActions";
 import { EquipmentFilters } from "@/components/shared/EquipmentFilters";
+import { NextPageProps } from "@/lib/next-types";
+
+type EquipmentSearchParams = {
+  query?: string;
+  category?: string;
+  condition?: string;
+};
 
 export default async function EquipmentPage({
   searchParams,
-}: {
-  searchParams?: Promise<{
-    query?: string;
-    category?: string;
-    condition?: string;
-  }>;
-}) {
-  const params = searchParams ? await searchParams : {};
+}: NextPageProps<{}, EquipmentSearchParams>) {
+  const params = searchParams
+    ? await searchParams
+    : ({} as EquipmentSearchParams);
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

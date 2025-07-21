@@ -19,6 +19,7 @@ import { SparePartExportActions } from "@/components/shared/SparePartExportActio
 import { AddCostDialog } from "@/components/shared/AddCostDialog";
 import { CostActions } from "@/components/shared/CostActions";
 import { CostExportActions } from "@/components/shared/CostExportActions"; // <-- Impor baru
+import { NextPageProps } from "@/lib/next-types";
 
 type Cost = {
   id: string;
@@ -28,12 +29,9 @@ type Cost = {
   transaction_date: string;
 };
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function EquipmentDetailPage({ params }: PageProps) {
+export default async function EquipmentDetailPage({
+  params,
+}: NextPageProps<{ id: string }>) {
   const { id } = await params;
   const cookieStore = await cookies();
   const supabase = createServerClient(
