@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { EquipmentActions } from "@/components/shared/EquipmentActions";
 import { EquipmentExportActions } from "@/components/shared/EquipmentExportActions";
 import { EquipmentFilters } from "@/components/shared/EquipmentFilters";
-import { NextPageProps } from "@/lib/next-types";
 
 type EquipmentSearchParams = {
   query?: string;
@@ -25,12 +24,13 @@ type EquipmentSearchParams = {
   condition?: string;
 };
 
-export default async function EquipmentPage({
-  searchParams,
-}: NextPageProps<{}, EquipmentSearchParams>) {
-  const params = searchParams
-    ? await searchParams
-    : ({} as EquipmentSearchParams);
+export default async function EquipmentPage(props: any) {
+  const searchParams = props.searchParams;
+  const params = {
+    query: searchParams?.query || "",
+    category: searchParams?.category || "all",
+    condition: searchParams?.condition || "all",
+  };
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,9 +58,9 @@ export default async function EquipmentPage({
     .single();
 
   // --- PERBAIKAN DI SINI ---
-  const searchTerm = params?.query || "";
-  const categoryFilter = params?.category || "all";
-  const conditionFilter = params?.condition || "all";
+  const searchTerm = params.query;
+  const categoryFilter = params.category;
+  const conditionFilter = params.condition;
 
   let query = supabase
     .from("equipment")

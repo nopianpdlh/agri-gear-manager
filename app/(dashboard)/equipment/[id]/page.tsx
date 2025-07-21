@@ -19,7 +19,6 @@ import { SparePartExportActions } from "@/components/shared/SparePartExportActio
 import { AddCostDialog } from "@/components/shared/AddCostDialog";
 import { CostActions } from "@/components/shared/CostActions";
 import { CostExportActions } from "@/components/shared/CostExportActions"; // <-- Impor baru
-import { NextPageProps } from "@/lib/next-types";
 
 type Cost = {
   id: string;
@@ -29,10 +28,8 @@ type Cost = {
   transaction_date: string;
 };
 
-export default async function EquipmentDetailPage({
-  params,
-}: NextPageProps<{ id: string }>) {
-  const { id } = await params;
+export default async function EquipmentDetailPage(props: any) {
+  const { id } = await props.params;
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

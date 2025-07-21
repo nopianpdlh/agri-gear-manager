@@ -2,44 +2,35 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { signInWithGoogleAction } from "@/app/actions";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  signInWithGoogleAction,
+  loginAction,
+  forgotPasswordAction,
+} from "@/app/actions";
+import { toast } from "sonner";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const supabase = createClient();
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      // Redirect ke dashboard setelah login berhasil
-      router.push("/dashboard");
-      router.refresh(); // Refresh untuk memastikan state server terupdate
+  const handleLogin = async (formData: FormData) => {
+    const result = await loginAction(formData);
+    if (result?.error) {
+      setError(result.error);
     }
   };
 
@@ -52,84 +43,118 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    toast.info("Mengirim email...");
+    const result = await forgotPasswordAction(forgotPasswordEmail);
+    if (result?.error) {
+      toast.error("Gagal!", { description: result.error });
+    } else {
+      toast.success("Email Terkirim!", {
+        description:
+          "Silakan periksa kotak masuk Anda untuk link reset kata sandi.",
+      });
+    }
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
-      <Card className="w-full max-w-md shadow-lg relative">
-        <div className="absolute top-4 left-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
-              <ChevronLeft className="h-6 w-6" />
-              <span className="sr-only">Kembali ke Beranda</span>
-            </Link>
-          </Button>
-        </div>
-        <CardHeader className="text-center pt-12">
-          <CardTitle className="text-4xl font-bold text-green-800">
-            Selamat Datang di Agri-Gear Manager
-          </CardTitle>
-          <CardDescription>
-            Masuk untuk melanjutkan ke dashboard Anda.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Alamat Email</Label>
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold text-green-800">
+              Selamat Datang Kembali
+            </h1>
+            <p className="text-balance text-muted-foreground">
+              Masukkan email Anda untuk masuk ke akun Agri-Gear
+            </p>
+          </div>
+          <form action={handleLogin} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
+                name="email"
                 placeholder="petani@contoh.com"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Kata Sandi</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Kata Sandi</Label>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="link"
+                      className="ml-auto inline-block text-sm underline"
+                    >
+                      Lupa kata sandi?
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Lupa Kata Sandi</DialogTitle>
+                      <DialogDescription>
+                        Masukkan email Anda. Kami akan mengirimkan link untuk
+                        mengatur ulang kata sandi Anda.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="forgot-email" className="text-right">
+                          Email
+                        </Label>
+                        <Input
+                          id="forgot-email"
+                          type="email"
+                          value={forgotPasswordEmail}
+                          onChange={(e) =>
+                            setForgotPasswordEmail(e.target.value)
+                          }
+                          className="col-span-3"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleForgotPassword}>Kirim Link</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <Input id="password" name="password" type="password" required />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <Button
               type="submit"
               className="w-full bg-green-700 hover:bg-green-800"
             >
-              Masuk dengan Email
+              Masuk
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleSignIn}
+            >
+              Masuk dengan Google
             </Button>
           </form>
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Atau lanjutkan dengan
-              </span>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleGoogleSignIn}
-          >
-            Masuk dengan Google
-          </Button>
-          <p className="text-sm text-center text-gray-600 mt-6">
+          <div className="mt-4 text-center text-sm">
             Belum punya akun?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-green-700 hover:underline"
-            >
-              Daftar di sini
+            <Link href="/register" className="underline">
+              Daftar
             </Link>
-          </p>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="/rice-field-amico.svg"
+          alt="Gambar Lahan Pertanian"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+        />
+      </div>
     </div>
   );
 }

@@ -627,7 +627,87 @@ export async function signInWithGoogleAction() {
   // Redirect terjadi di sisi klien, jadi kita kirim URL-nya
   return { url: data.url };
 }
+export async function loginAction(formData: FormData) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    return { error: "Email atau kata sandi salah." };
+  }
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
+}
+
+// Action baru untuk lupa password
+export async function forgotPasswordAction(email: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/auth/reset-password`,
+  });
+  if (error) {
+    return { error: "Gagal mengirim email reset. Pastikan email benar." };
+  }
+  return { success: true };
+}
+
+// Action baru untuk update password
+export async function updateUserPasswordAction(password: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
+          cookieStore.set(name, value, options);
+        },
+        remove: (name: string, options: CookieOptions) => {
+          cookieStore.set(name, "", options);
+        },
+      },
+    }
+  );
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return {
+      error: "Gagal memperbarui kata sandi. Link mungkin sudah kedaluwarsa.",
+    };
+  }
+  return { success: true };
+}
 export async function addSparePartAction(
   equipmentId: string,
   formData: FormData
