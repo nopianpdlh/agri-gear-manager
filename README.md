@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Agri-Gear Manager
+Modernisasi Manajemen Aset Pertanian Anda
 
-## Getting Started
+Agri-Gear Manager adalah sistem manajemen inventaris dan peralatan pertanian berbasis web yang dirancang untuk membantu petani, kelompok tani, atau koperasi dalam mengelola aset mereka secara efisien. Aplikasi ini dibangun dengan tumpukan teknologi modern untuk memastikan performa, keamanan, dan pengalaman pengguna yang optimal.
 
-First, run the development server:
+✨ Fitur yang Telah Diimplementasikan
+Manajemen Peralatan (CRUD): Tambah, lihat, edit, dan hapus data peralatan lengkap dengan foto.
 
-```bash
+Sistem Pendaftaran Multi-Langkah: Formulir pendaftaran komprehensif dengan validasi real-time dan dropdown dinamis untuk alamat.
+
+Autentikasi Aman: Login/Registrasi menggunakan email & password serta penyedia OAuth (Google).
+
+Manajemen Peminjaman: Alur kerja lengkap mulai dari pengajuan, persetujuan/penolakan oleh admin, hingga pengembalian alat.
+
+Pelacakan Biaya Operasional: Catat dan kelola semua biaya yang terkait dengan setiap peralatan (servis, bahan bakar, dll).
+
+Manajemen Suku Cadang: Lacak stok suku cadang untuk setiap peralatan, lengkap dengan fungsionalitas CRUD.
+
+Kontrol Akses Berbasis Peran (RBAC): Perbedaan hak akses dan tampilan antara peran Admin dan Anggota.
+
+Dashboard Dinamis: Tampilan ringkasan data real-time dengan statistik dan visualisasi data (grafik).
+
+Pencarian & Filter Lanjutan: Kemampuan untuk mencari dan memfilter daftar peralatan berdasarkan nama, kategori, dan kondisi.
+
+Ekspor Data: Unduh laporan inventaris, riwayat penggunaan, dan data lainnya ke format Excel (.xlsx) dan PDF (.pdf).
+
+🚀 Tumpukan Teknologi (Tech Stack)
+Framework: Next.js (App Router)
+
+Bahasa: TypeScript
+
+Styling: Tailwind CSS
+
+Komponen UI: Shadcn/UI
+
+Backend & Database: Supabase (PostgreSQL, Auth, Storage)
+
+Deployment: Vercel
+
+⚙️ Panduan Instalasi Lokal
+Untuk menjalankan proyek ini di lingkungan lokal, ikuti langkah-langkah berikut:
+
+Clone Repositori:
+
+git clone [URL_REPOSITORI_ANDA]
+cd agri-gear-manager
+
+
+Instal Dependensi:
+
+npm install
+
+
+Siapkan Environment Variables:
+
+Buat file .env.local di root proyek.
+
+Salin isi dari .env.example (jika ada) atau isi dengan variabel berikut:
+
+# Kunci Publik Supabase (Aman untuk diekspos)
+NEXT_PUBLIC_SUPABASE_URL=URL_PROYEK_SUPABASE_ANDA
+NEXT_PUBLIC_SUPABASE_ANON_KEY=KUNCI_ANON_PUBLIC_ANDA
+
+# Kunci Rahasia Supabase (Hanya untuk server)
+SUPABASE_SERVICE_ROLE_KEY=KUNCI_SERVICE_ROLE_ANDA
+
+# URL Situs (Untuk OAuth Redirect)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+
+Anda bisa mendapatkan semua kunci ini dari Project Settings > API di dashboard Supabase Anda.
+
+Jalankan Server Pengembangan:
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Buka http://localhost:3000 di browser Anda.
