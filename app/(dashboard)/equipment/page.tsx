@@ -21,12 +21,13 @@ import { EquipmentFilters } from "@/components/shared/EquipmentFilters";
 export default async function EquipmentPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     query?: string;
     category?: string;
     condition?: string;
-  };
+  }>;
 }) {
+  const params = searchParams ? await searchParams : {};
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,9 +55,9 @@ export default async function EquipmentPage({
     .single();
 
   // --- PERBAIKAN DI SINI ---
-  const searchTerm = searchParams?.query || "";
-  const categoryFilter = searchParams?.category || "all";
-  const conditionFilter = searchParams?.condition || "all";
+  const searchTerm = params?.query || "";
+  const categoryFilter = params?.category || "all";
+  const conditionFilter = params?.condition || "all";
 
   let query = supabase
     .from("equipment")

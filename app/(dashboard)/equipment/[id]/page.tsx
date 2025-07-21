@@ -28,18 +28,13 @@ type Cost = {
   transaction_date: string;
 };
 
-// Definisikan tipe Props secara eksplisit
-// type Props = {
-//   params: { id: string };
-//   searchParams: { [key: string]: string | string[] | undefined };
-// };
+interface PageProps {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
 
-export default async function EquipmentDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const { id } = params;
+export default async function EquipmentDetailPage({ params }: PageProps) {
+  const { id } = await params;
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
