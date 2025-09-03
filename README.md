@@ -42,7 +42,7 @@ Untuk menjalankan proyek ini di lingkungan lokal, ikuti langkah-langkah berikut:
 
 Clone Repositori:
 
-git clone [URL_REPOSITORI_ANDA]
+git clone https://github.com/nopianpdlh/agri-gear-manager.git
 cd agri-gear-manager
 
 
